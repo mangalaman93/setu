@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	cDateFormat = "02-01-2006"
-	cSetuURL    = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict"
+	cDateFormat      = "02-01-2006"
+	cEmailDateFormat = "Jan 02, 2006"
+	cSetuURL         = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict"
 )
 
 type apiResp struct {
@@ -30,7 +31,8 @@ func getSlotsForDays(districtID int, centers []int, days []time.Time) (int, erro
 	for _, d := range days {
 		slots, err := getSlots(districtID, centers, d)
 		if err != nil {
-			return 0, fmt.Errorf("error getting slots for %v: %w", d, err)
+			date := d.Format(cEmailDateFormat)
+			return 0, fmt.Errorf("error getting slots for %v: %w", date, err)
 		}
 
 		totalSlots += slots
