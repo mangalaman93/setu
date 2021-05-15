@@ -22,6 +22,7 @@ type apiResp struct {
 		CenterID int `json:"center_id"`
 		Sessions []struct {
 			AvailableCap int `json:"available_capacity"`
+			MinAgeLimit  int `json:"min_age_limit"`
 		} `json:"sessions"`
 	} `json:"centers"`
 }
@@ -80,6 +81,10 @@ func getSlots(districtID int, centers []int, t time.Time) (int, error) {
 		if inSlice(c.CenterID, centers) {
 			total := 0
 			for _, s := range c.Sessions {
+				if s.MinAgeLimit != 18 {
+					continue
+				}
+
 				total += s.AvailableCap
 			}
 
@@ -91,6 +96,11 @@ func getSlots(districtID int, centers []int, t time.Time) (int, error) {
 }
 
 func inSlice(n int, s []int) bool {
+	// Handle special case
+	if s[0] == 0 {
+		return true
+	}
+
 	for _, e := range s {
 		if n == e {
 			return true
