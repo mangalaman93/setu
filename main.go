@@ -19,20 +19,25 @@ var (
 )
 
 func main() {
-	districtIDstr := os.Getenv("DISTRICT_ID")
-	districtID, err := strconv.ParseInt(districtIDstr, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-
-	centersStr := os.Getenv("CENTERS")
-	centers := make([]int, 0)
-	for _, s := range strings.Split(centersStr, ",") {
-		center, err := strconv.ParseInt(s, 10, 64)
+	d2c := make(map[int][]int)
+	input := os.Getenv("DISTRICTS_TO_CENTERS")
+	for _, b := range strings.Split(input, ";") {
+		blocks := strings.Split(b, "->")
+		districtID, err := strconv.ParseInt(blocks[0], 10, 64)
 		if err != nil {
 			panic(err)
 		}
-		centers = append(centers, int(center))
+
+		centers := make([]int, 0)
+		for _, s := range strings.Split(blocks[1], ",") {
+			center, err := strconv.ParseInt(s, 10, 64)
+			if err != nil {
+				panic(err)
+			}
+			centers = append(centers, int(center))
+		}
+
+		d2c[int(districtID)] = centers
 	}
 
 	// setup setu dir
@@ -62,11 +67,11 @@ func main() {
 		log.Println("[INFO] running the service as a daemon")
 	} else {
 		defer ctx.Release()
-		runChild(int(districtID), centers, logDir)
+		runChild(d2c, logDir)
 	}
 }
 
-func runChild(districtID int, centers []int, logDir string) {
+func runChild(d2c map[int][]int, logDir string) {
 	// log setup
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	logFilePath := path.Join(logDir, "setu.log")
@@ -86,15 +91,17 @@ func runChild(districtID int, centers []int, logDir string) {
 	for {
 		select {
 		case <-ticker.C:
-			slots, err := getSlotsForDays(districtID, centers, days)
-			if err != nil {
-				log.Printf("[ERROR] error ocurred: %v", err)
-				email(0, err)
-			} else if slots > 0 {
-				log.Printf("[INFO] found %v empty slots", slots)
-				email(slots, nil)
-			} else {
-				log.Println("[INFO] no available slots found")
+			for districtID, centers := range d2c {
+				slots, err := getSlotsForDays(districtID, centers, days)
+				if err != nil {
+					log.Printf("[ERROR] error ocurred: %v", err)
+					email(0, 0, err)
+				} else if slots > 0 {
+					log.Printf("[INFO] found %v empty slots", slots)
+					email(districtID, slots, nil)
+				} else {
+					log.Printf("[INFO] no available slots found for district %v", districtID)
+				}
 			}
 		case <-sigs:
 			return

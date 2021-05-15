@@ -10,7 +10,7 @@ import (
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-func email(slots int, err error) {
+func email(districtID, slots int, err error) {
 	apiKey := os.Getenv("SENDGRID_API_KEY")
 	if apiKey == "" {
 		log.Println("no api key found, not emailing")
@@ -23,17 +23,21 @@ func email(slots int, err error) {
 	fromEmail := os.Getenv("EMAIL_FROM")
 	m.SetFrom(mail.NewEmail(fromEmail, fromEmail))
 
-	toEmails := os.Getenv("EMAIL_TO")
-	toEmailList := strings.Split(toEmails, ",")
-	for _, to := range toEmailList {
-		p.AddTos(mail.NewEmail(to, to))
+	p.AddTos(mail.NewEmail(fromEmail, fromEmail))
+	if err == nil {
+		toEmails := os.Getenv("EMAIL_TO")
+		toEmailList := strings.Split(toEmails, ",")
+		for _, to := range toEmailList {
+			p.AddTos(mail.NewEmail(to, to))
+		}
 	}
 
 	if err != nil {
 		content := mail.NewContent("text/plain", fmt.Sprintf("error occurred: %v", err))
 		m.AddContent(content)
 	} else {
-		content := mail.NewContent("text/plain", fmt.Sprintf("found available slots: %v", slots))
+		emailBody := fmt.Sprintf("found available slots %v for district %v", slots, districtID)
+		content := mail.NewContent("text/plain", emailBody)
 		m.AddContent(content)
 	}
 
