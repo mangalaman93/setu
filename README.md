@@ -12,6 +12,8 @@ cp .env.sample .env
 source .env
 ```
 
+### Run the Daemon
+
 ```
 go get github.com/mangalaman93/setu
 cd $GOPATH/src/github.com/mangalaman93/setu
